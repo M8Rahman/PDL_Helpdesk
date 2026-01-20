@@ -3,7 +3,7 @@ session_start();
 require_once "../config/db.php";
 
 /* Security */
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'super_admin') {
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     exit("Unauthorized");
 }
 
@@ -11,28 +11,29 @@ $type = $_GET['type'] ?? 'all';
 
 $where = "";
 if ($type === 'pending') {
-    $where = "WHERE status='pending'";
+    $where = "WHERE status='Open'";
 }
 elseif ($type === 'solved') {
-    $where = "WHERE status='solved'";
+    $where = "WHERE status='Solved'";
 }
 elseif ($type === 'it') {
-    $where = "WHERE assigned_team='it'";
+    $where = "WHERE team='it'";
 }
 elseif ($type === 'mis') {
-    $where = "WHERE assigned_team='mis'";
+    $where = "WHERE team='mis'";
 }
 
 $sql = "
 SELECT 
-    ticket_number,
-    status,
-    assigned_team,
-    updated_by,
-    TIMESTAMPDIFF(MINUTE, created_at, updated_at) AS time_taken
-FROM tickets
+    t.ticket_no,
+    t.status,
+    t.team,
+    u.username AS updated_by_name,
+    TIMESTAMPDIFF(MINUTE, t.created_at, t.solved_at) AS time_taken
+FROM tickets t
+LEFT JOIN users u ON u.id = t.updated_by
 $where
-ORDER BY created_at DESC
+ORDER BY t.created_at DESC
 ";
 
 $result = $conn->query($sql);
@@ -51,11 +52,11 @@ $result = $conn->query($sql);
 
 <?php while ($row = $result->fetch_assoc()): ?>
 <tr>
-    <td><?= $row['ticket_number'] ?></td>
+    <td><?= $row['ticket_no'] ?></td>
     <td><?= $row['status'] ?></td>
-    <td><?= strtoupper($row['assigned_team']) ?></td>
-    <td><?= $row['status'] === 'solved' ? $row['time_taken'] : '-' ?></td>
-    <td><?= $row['updated_by'] ?></td>
+    <td><?= strtoupper($row['team']) ?></td>
+    <td><?= $row['status'] === 'Solved' ? $row['time_taken'] : '-' ?></td>
+    <td><?= $row['updated_by_name'] ?? '-' ?></td>
 </tr>
 <?php endwhile; ?>
 </table>

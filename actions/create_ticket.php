@@ -1,15 +1,15 @@
 <?php
 require_once("../config/db.php");
 
-if ($_SESSION["role"] !== "user") {
+if (!isset($_SESSION["user_id"]) || $_SESSION["role"] !== "user") {
     exit("Unauthorized");
 }
 
-$team = $_POST["team"];
-$problem = trim($_POST["problem"]);
+$team = strtolower(trim($_POST["team"] ?? ''));
+$problem = trim($_POST["problem"] ?? '');
 $user_id = $_SESSION["user_id"];
 
-if (!$team || !$problem) {
+if (!$team || !$problem || !in_array($team, ['it', 'mis'])) {
     exit("Invalid input");
 }
 
@@ -27,14 +27,17 @@ if ($row = $result->fetch_assoc()) {
     $nextNumber = intval($m[1]) + 1;
 }
 
-$ticket_no = "PDL-" . $team . "-" . str_pad($nextNumber, 6, "0", STR_PAD_LEFT);
+$ticket_no = "PDL-" . strtoupper($team) . "-" . str_pad($nextNumber, 6, "0", STR_PAD_LEFT);
 
 /* Insert ticket */
 $stmt = $conn->prepare(
-    "INSERT INTO tickets (ticket_no, user_id, team, problem)
-     VALUES (?, ?, ?, ?)"
+    "INSERT INTO tickets (ticket_no, user_id, team, problem, status, created_at)
+     VALUES (?, ?, ?, ?, 'Pending', NOW())"
 );
 $stmt->bind_param("siss", $ticket_no, $user_id, $team, $problem);
-$stmt->execute();
-
-header("Location: ../user/dashboard.php");
+if ($stmt->execute()) {
+    header("Location: ../user/dashboard.php");
+} else {
+    exit("Failed to create ticket");
+}
+exit;

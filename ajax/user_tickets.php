@@ -2,6 +2,10 @@
 require_once("../config/db.php");
 require_once("../helpers/time.php");
 
+if (!isset($_SESSION["user_id"]) || $_SESSION["role"] !== "user") {
+    exit("Unauthorized");
+}
+
 $user_id = $_SESSION["user_id"];
 
 $where = ["user_id = ?"];
@@ -37,18 +41,18 @@ if (!empty($_GET["to_date"])) {
 
 $sql = "
 SELECT 
-    ticket_no,
-    team,
-    problem,
-    status,
-    solution,
-    created_at,
-    solved_at,
+    t.ticket_no,
+    t.team,
+    t.problem,
+    t.status,
+    t.solution,
+    t.created_at,
+    t.solved_at,
     u.username AS solved_by
 FROM tickets t
 LEFT JOIN users u ON u.id = t.solved_by
 WHERE " . implode(" AND ", $where) . "
-ORDER BY created_at DESC
+ORDER BY t.created_at DESC
 ";
 
 $stmt = $conn->prepare($sql);
@@ -57,26 +61,33 @@ $stmt->execute();
 $result = $stmt->get_result();
 ?>
 
-<table border="1" width="100%">
-<tr>
-    <th>Ticket</th>
-    <th>To</th>
-    <th>Problem</th>
-    <th>Status</th>
-    <th>Time Taken</th>
-    <th>Solution</th>
-    <th>Solved By</th>
-</tr>
-
-<?php while ($r = $result->fetch_assoc()): ?>
-<tr>
-    <td><?= $r["ticket_no"] ?></td>
-    <td><?= strtoupper($r["team"]) ?></td>
-    <td><?= htmlspecialchars($r["problem"]) ?></td>
-    <td><?= $r["status"] ?></td>
-    <td><?= timeTaken($r["created_at"], $r["solved_at"]) ?></td>
-    <td><?= htmlspecialchars($r["solution"]) ?></td>
-    <td><?= $r["solved_by"] ?></td>
-</tr>
-<?php endwhile; ?>
+<?php if ($result->num_rows === 0): ?>
+    <div class="message message-info">No tickets found</div>
+<?php else: ?>
+<table>
+    <thead>
+        <tr>
+            <th>Ticket No</th>
+            <th>Team</th>
+            <th>Problem</th>
+            <th>Status</th>
+            <th>Time Taken</th>
+            <th>Solution</th>
+            <th>Solved By</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php while ($r = $result->fetch_assoc()): ?>
+        <tr>
+            <td><strong><?= $r["ticket_no"] ?></strong></td>
+            <td><span class="team-badge team-<?= $r["team"] ?>"><?= strtoupper($r["team"]) ?></span></td>
+            <td><?= htmlspecialchars($r["problem"]) ?></td>
+            <td><span class="status-badge status-<?= strtolower($r["status"]) ?>"><?= $r["status"] ?></span></td>
+            <td><?= timeTaken($r["created_at"], $r["solved_at"]) ?></td>
+            <td><?= htmlspecialchars($r["solution"] ?? '—') ?></td>
+            <td><?= htmlspecialchars($r["solved_by"] ?? '—') ?></td>
+        </tr>
+        <?php endwhile; ?>
+    </tbody>
 </table>
+<?php endif; ?>

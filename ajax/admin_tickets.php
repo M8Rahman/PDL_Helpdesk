@@ -2,6 +2,10 @@
 require_once("../config/db.php");
 require_once("../helpers/time.php");
 
+if (!isset($_SESSION["user_id"]) || $_SESSION["role"] !== "admin") {
+    exit("Unauthorized");
+}
+
 $where = [];
 $params = [];
 $types  = "";
@@ -68,24 +72,33 @@ $stmt->execute();
 $result = $stmt->get_result();
 ?>
 
-<table border="1" width="100%">
-<tr>
-    <th>Ticket</th>
-    <th>Team</th>
-    <th>Requester</th>
-    <th>Status</th>
-    <th>Time Taken</th>
-    <th>Solved By</th>
-</tr>
-
-<?php while ($r = $result->fetch_assoc()): ?>
-<tr>
-    <td><?= $r["ticket_no"] ?></td>
-    <td><?= strtoupper($r["team"]) ?></td>
-    <td><?= $r["requester"] ?></td>
-    <td><?= $r["status"] ?></td>
-    <td><?= timeTaken($r["created_at"], $r["solved_at"]) ?></td>
-    <td><?= $r["solver"] ?></td>
-</tr>
-<?php endwhile; ?>
+<?php if ($result->num_rows === 0): ?>
+    <div class="message message-info">No tickets found</div>
+<?php else: ?>
+<table>
+    <thead>
+        <tr>
+            <th>Ticket No</th>
+            <th>Team</th>
+            <th>Requester</th>
+            <th>Problem</th>
+            <th>Status</th>
+            <th>Time Taken</th>
+            <th>Solved By</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php while ($r = $result->fetch_assoc()): ?>
+        <tr>
+            <td><strong><?= $r["ticket_no"] ?></strong></td>
+            <td><span class="team-badge team-<?= $r["team"] ?>"><?= strtoupper($r["team"]) ?></span></td>
+            <td><?= htmlspecialchars($r["requester"]) ?></td>
+            <td><?= htmlspecialchars($r["problem"]) ?></td>
+            <td><span class="status-badge status-<?= strtolower($r["status"]) ?>"><?= $r["status"] ?></span></td>
+            <td><?= timeTaken($r["created_at"], $r["solved_at"]) ?></td>
+            <td><?= htmlspecialchars($r["solver"] ?? '—') ?></td>
+        </tr>
+        <?php endwhile; ?>
+    </tbody>
 </table>
+<?php endif; ?>
