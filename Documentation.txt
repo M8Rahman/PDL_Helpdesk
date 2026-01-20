@@ -1,0 +1,6 @@
+Server
+###########################
+Server Main Path--> D:\Xampp\htdocs\PDL_Helpdesk
+Project URL--> http://192.168.0.160/PDL_Helpdesk/
+Client URL Bookmark--> http://192.168.0.160/PDL_Helpdesk/auth/login.php
+
