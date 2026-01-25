@@ -8,33 +8,33 @@ if (!isset($_SESSION["user_id"]) || $_SESSION["role"] !== "user") {
 
 $user_id = $_SESSION["user_id"];
 
-$where = ["user_id = ?"];
+$where = ["t.user_id = ?"];
 $params = [$user_id];
 $types  = "i";
 
 /* Ticket no */
 if (!empty($_GET["ticket_no"])) {
-    $where[] = "ticket_no LIKE ?";
+    $where[] = "t.ticket_no LIKE ?";
     $params[] = "%" . $_GET["ticket_no"] . "%";
     $types .= "s";
 }
 
 /* Status */
 if (!empty($_GET["status"])) {
-    $where[] = "status = ?";
+    $where[] = "t.status = ?";
     $params[] = $_GET["status"];
     $types .= "s";
 }
 
-/* Date range */
+/* Date range - FIX: Added table alias 't.' */
 if (!empty($_GET["from_date"])) {
-    $where[] = "DATE(created_at) >= ?";
+    $where[] = "DATE(t.created_at) >= ?";
     $params[] = $_GET["from_date"];
     $types .= "s";
 }
 
 if (!empty($_GET["to_date"])) {
-    $where[] = "DATE(created_at) <= ?";
+    $where[] = "DATE(t.created_at) <= ?";
     $params[] = $_GET["to_date"];
     $types .= "s";
 }

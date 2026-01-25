@@ -8,79 +8,134 @@ $stmt = $conn->prepare("
     SELECT
         COUNT(*) AS total,
         SUM(status = 'Solved') AS solved,
-        SUM(status = 'Open') AS pending
+        SUM(status = 'Pending') AS pending
     FROM tickets
     WHERE user_id = ?
 ");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $summary = $stmt->get_result()->fetch_assoc();
+
+$pageTitle = "User Dashboard - PDL Helpdesk";
+$headerTitle = "User Dashboard";
+$basePath = "../";
+include("../includes/header.php");
 ?>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>User Dashboard - PDL Helpdesk</title>
+<!-- Summary Cards -->
+<div class="cards">
+    <div class="card blue">
+        <h3>Total Tickets</h3>
+        <div class="number"><?= $summary["total"] ?? 0 ?></div>
+        <button onclick="loadUserTickets()">View All</button>
+    </div>
 
-    <script>
-        let detailsVisible = false;
+    <div class="card green">
+        <h3>Solved</h3>
+        <div class="number"><?= $summary["solved"] ?? 0 ?></div>
+        <button onclick="loadUserTickets('solved')">View Details</button>
+    </div>
 
-        function toggleDetails() {
-            const box = document.getElementById("detailsBox");
+    <div class="card orange">
+        <h3>Pending</h3>
+        <div class="number"><?= $summary["pending"] ?? 0 ?></div>
+        <button onclick="loadUserTickets('pending')">View Details</button>
+    </div>
+</div>
 
-            if (!detailsVisible) {
-                fetch("../ajax/user_tickets.php")
-                    .then(res => res.text())
-                    .then(html => {
-                        box.innerHTML = html;
-                        box.style.display = "block";
-                        detailsVisible = true;
-                    });
-            } else {
-                box.style.display = "none";
-                detailsVisible = false;
-            }
-        }
-    </script>
-</head>
-<body>
+<hr class="section-divider">
 
-<h2>Welcome, <?= htmlspecialchars($_SESSION["username"]) ?></h2>
+<!-- New Ticket Form -->
+<div class="section">
+    <h3>📝 Submit a New Problem</h3>
+    
+    <form method="post" action="../actions/create_ticket.php">
+        <div class="form-group">
+            <label>Select Team</label>
+            <select name="team" required>
+                <option value="">-- Select Team --</option>
+                <option value="it">IT Team</option>
+                <option value="mis">MIS Team</option>
+            </select>
+        </div>
 
-<!-- SUMMARY -->
-<h3>Ticket Summary</h3>
+        <div class="form-group">
+            <label>Describe Your Problem</label>
+            <textarea name="problem" placeholder="Please provide details about your issue..." required></textarea>
+        </div>
 
-<ul>
-    <li>Total Submitted: <b><?= $summary["total"] ?></b></li>
-    <li>Solved: <b><?= $summary["solved"] ?></b></li>
-    <li>Pending: <b><?= $summary["pending"] ?></b></li>
-</ul>
+        <button type="submit" class="btn btn-success">Submit Ticket</button>
+    </form>
+</div>
 
-<button onclick="toggleDetails()">View Details</button>
+<hr class="section-divider">
 
-<hr>
+<!-- Filters -->
+<div class="section">
+    <h3>🔍 My Tickets</h3>
+    
+    <form id="userFilterForm" class="form-inline" onsubmit="event.preventDefault(); loadUserTickets();">
+        <div class="form-group">
+            <label>Ticket No</label>
+            <input type="text" name="ticket_no" placeholder="PDL-IT-000001">
+        </div>
 
-<!-- DETAILS (HIDDEN INITIALLY) -->
-<div id="detailsBox" style="display:none"></div>
+        <div class="form-group">
+            <label>Status</label>
+            <select name="status">
+                <option value="">All</option>
+                <option value="Pending">Pending</option>
+                <option value="Solved">Solved</option>
+            </select>
+        </div>
 
-<hr>
+        <div class="form-group">
+            <label>From Date</label>
+            <input type="date" name="from_date">
+        </div>
 
-<h3>Submit a New Problem</h3>
+        <div class="form-group">
+            <label>To Date</label>
+            <input type="date" name="to_date">
+        </div>
 
-<form method="post" action="../actions/create_ticket.php">
-    <select name="team" required>
-        <option value="">Select Team</option>
-        <option value="IT">IT Team</option>
-        <option value="MIS">MIS Team</option>
-    </select><br><br>
+        <div class="form-group">
+            <label>&nbsp;</label>
+            <button type="submit">Apply Filters</button>
+        </div>
+    </form>
+</div>
 
-    <textarea name="problem" placeholder="Describe your problem" required></textarea><br><br>
+<!-- Ticket Table -->
+<div id="ticketTable">
+    <div class="loading">Loading tickets</div>
+</div>
 
-    <button type="submit">Submit</button>
-</form>
+<script>
+function loadUserTickets(quickFilter = null) {
+    let url = "../ajax/user_tickets.php";
 
-<br>
-<a href="../auth/logout.php">Logout</a>
+    if (quickFilter) {
+        url += "?status=" + (quickFilter === 'solved' ? 'Solved' : 'Pending');
+    } else {
+        const form = document.getElementById("userFilterForm");
+        const params = new URLSearchParams(new FormData(form)).toString();
+        if (params) url += "?" + params;
+    }
 
-</body>
-</html>
+    fetch(url)
+        .then(res => res.text())
+        .then(html => {
+            document.getElementById("ticketTable").innerHTML = html;
+        })
+        .catch(err => {
+            document.getElementById("ticketTable").innerHTML = 
+                '<div class="message message-error">Failed to load tickets</div>';
+        });
+}
+
+// Load tickets on page load
+loadUserTickets();
+</script>
+
+<?php include("../includes/footer.php"); ?>

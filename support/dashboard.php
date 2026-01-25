@@ -29,6 +29,17 @@ $leader->bind_param("s", $team);
 $leader->execute();
 $leaders = $leader->get_result();
 
+/* Get unread notifications count */
+$notifStmt = $conn->prepare("
+    SELECT COUNT(*) as count 
+    FROM notifications n
+    JOIN tickets t ON n.ticket_id = t.id
+    WHERE t.team = ? AND n.is_read = 0
+");
+$notifStmt->bind_param("s", $team);
+$notifStmt->execute();
+$unreadCount = $notifStmt->get_result()->fetch_assoc()["count"];
+
 $pageTitle = strtoupper($team) . " Support Dashboard";
 $headerTitle = strtoupper($team) . " Team Dashboard";
 $basePath = "../";

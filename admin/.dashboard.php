@@ -1,12 +1,12 @@
 <?php
 require_once("admin_guard.php");
 
-/* Ticket summary */
+/* Summary */
 $summary = $conn->query("
     SELECT
         COUNT(*) AS total,
         SUM(status = 'Solved') AS solved,
-        SUM(status = 'Open') AS pending,
+        SUM(status = 'Pending') AS pending,
         SUM(team = 'it') AS it_total,
         SUM(team = 'mis') AS mis_total
     FROM tickets
@@ -19,7 +19,7 @@ $avgTime = $conn->query("
     WHERE solved_at IS NOT NULL
 ")->fetch_assoc()["avg_min"];
 
-/* Solved by leaderboard */
+/* Leaderboard */
 $leaders = $conn->query("
     SELECT u.username, COUNT(*) AS solved_count
     FROM tickets t
@@ -27,95 +27,162 @@ $leaders = $conn->query("
     WHERE t.status = 'Solved'
     GROUP BY t.solved_by
     ORDER BY solved_count DESC
+    LIMIT 10
 ");
+
+$pageTitle = "Admin Dashboard - PDL Helpdesk";
+$headerTitle = "👑 Super Admin Dashboard";
+$basePath = "../";
+include("../includes/header.php");
 ?>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Admin Dashboard - PDL Helpdesk</title>
+<!-- Summary Cards -->
+<div class="cards">
+    <div class="card blue">
+        <h3>Total Tickets</h3>
+        <div class="number"><?= $summary["total"] ?? 0 ?></div>
+        <button onclick="loadAdminTickets('all')">View All</button>
+    </div>
 
-    <script>
-        function loadAdminTickets() {
-            const form = document.getElementById("adminFilterForm");
-            const data = new URLSearchParams(new FormData(form)).toString();
+    <div class="card green">
+        <h3>Solved</h3>
+        <div class="number"><?= $summary["solved"] ?? 0 ?></div>
+        <button onclick="loadAdminTickets('solved')">View Details</button>
+    </div>
 
-            fetch("../ajax/admin_tickets.php?" + data)
-                .then(res => res.text())
-                .then(html => {
-                    document.getElementById("adminTable").innerHTML = html;
-                });
-        }
-    </script>
+    <div class="card orange">
+        <h3>Pending</h3>
+        <div class="number"><?= $summary["pending"] ?? 0 ?></div>
+        <button onclick="loadAdminTickets('pending')">View Details</button>
+    </div>
 
-</head>
-<body>
+    <div class="card purple">
+        <h3>IT Team</h3>
+        <div class="number"><?= $summary["it_total"] ?? 0 ?></div>
+        <button onclick="loadAdminTickets('it')">View Details</button>
+    </div>
 
-<h2>👑 Super Admin Dashboard</h2>
+    <div class="card red">
+        <h3>MIS Team</h3>
+        <div class="number"><?= $summary["mis_total"] ?? 0 ?></div>
+        <button onclick="loadAdminTickets('mis')">View Details</button>
+    </div>
+</div>
 
-<!-- SUMMARY -->
-<h3>System Summary</h3>
-<ul>
-    <li>Total Tickets: <b><?= $summary["total"] ?></b></li>
-    <li>Solved: <b><?= $summary["solved"] ?></b></li>
-    <li>Pending: <b><?= $summary["pending"] ?></b></li>
-    <li>IT Team Tickets: <b><?= $summary["it_total"] ?></b></li>
-    <li>MIS Team Tickets: <b><?= $summary["mis_total"] ?></b></li>
-</ul>
+<!-- Performance & Leaderboard -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+    <div class="section">
+        <h3>📊 Performance</h3>
+        <p style="font-size: 24px; font-weight: bold; color: #007bff;">
+            <?= $avgTime ? round($avgTime) . ' min' : 'N/A' ?>
+        </p>
+        <p style="color: #666;">Average Resolution Time</p>
+    </div>
 
-<h3>Performance</h3>
-<ul>
-    <li>Average Resolution Time: 
-        <b><?= round($avgTime) ?> min</b>
-    </li>
-</ul>
+    <div class="section">
+        <h3>🏆 Top Performers</h3>
+        <ul>
+            <?php while ($l = $leaders->fetch_assoc()): ?>
+                <li><strong><?= htmlspecialchars($l["username"]) ?></strong> — <?= $l["solved_count"] ?> tickets</li>
+            <?php endwhile; ?>
+        </ul>
+    </div>
+</div>
 
-<h3>Solved By</h3>
-<ul>
-<?php while ($l = $leaders->fetch_assoc()): ?>
-    <li><?= $l["username"] ?> — <?= $l["solved_count"] ?></li>
-<?php endwhile; ?>
-</ul>
+<hr class="section-divider">
 
+<!-- Quick Actions -->
+<div class="section">
+    <h3>⚙️ Quick Actions</h3>
+    <div style="display: flex; gap: 10px;">
+        <a href="add_user.php" class="btn">➕ Add New User</a>
+        <a href="users.php" class="btn btn-secondary">👥 Manage Users</a>
+    </div>
+</div>
 
-<h3>Filters</h3>
+<hr class="section-divider">
 
-<form id="adminFilterForm" onsubmit="event.preventDefault(); loadAdminTickets();">
-    Ticket No:
-    <input type="text" name="ticket_no">
+<!-- Filters -->
+<div class="section">
+    <h3>🔍 Filter Tickets</h3>
+    
+    <form id="adminFilterForm" class="form-inline" onsubmit="event.preventDefault(); loadAdminTickets('filter');">
+        <div class="form-group">
+            <label>Ticket No</label>
+            <input type="text" name="ticket_no" placeholder="PDL-IT-000001">
+        </div>
 
-    Team:
-    <select name="team">
-        <option value="">All</option>
-        <option value="it">IT</option>
-        <option value="mis">MIS</option>
-    </select>
+        <div class="form-group">
+            <label>Team</label>
+            <select name="team">
+                <option value="">All</option>
+                <option value="it">IT</option>
+                <option value="mis">MIS</option>
+            </select>
+        </div>
 
-    Status:
-    <select name="status">
-        <option value="">All</option>
-        <option value="Open">Open</option>
-        <option value="Solved">Solved</option>
-    </select>
+        <div class="form-group">
+            <label>Status</label>
+            <select name="status">
+                <option value="">All</option>
+                <option value="Pending">Pending</option>
+                <option value="Solved">Solved</option>
+            </select>
+        </div>
 
-    From:
-    <input type="date" name="from_date">
+        <div class="form-group">
+            <label>From Date</label>
+            <input type="date" name="from_date">
+        </div>
 
-    To:
-    <input type="date" name="to_date">
+        <div class="form-group">
+            <label>To Date</label>
+            <input type="date" name="to_date">
+        </div>
 
-    <button type="submit">Apply</button>
-</form>
+        <div class="form-group">
+            <label>&nbsp;</label>
+            <button type="submit">Apply Filters</button>
+        </div>
+    </form>
+</div>
 
-<button onclick="loadAdminTickets()">View All Tickets</button>
+<!-- Ticket Table -->
+<div id="adminTable">
+    <div class="loading">Loading tickets</div>
+</div>
 
-<hr>
+<script>
+function loadAdminTickets(filter) {
+    let url = "../ajax/admin_tickets.php";
 
-<div id="adminTable"></div>
+    if (filter === 'filter') {
+        const form = document.getElementById("adminFilterForm");
+        const params = new URLSearchParams(new FormData(form)).toString();
+        url += "?" + params;
+    } else if (filter === 'pending') {
+        url += "?status=Pending";
+    } else if (filter === 'solved') {
+        url += "?status=Solved";
+    } else if (filter === 'it') {
+        url += "?team=it";
+    } else if (filter === 'mis') {
+        url += "?team=mis";
+    }
 
-<br>
-<a href="../auth/logout.php">Logout</a>
+    fetch(url)
+        .then(res => res.text())
+        .then(html => {
+            document.getElementById("adminTable").innerHTML = html;
+        })
+        .catch(err => {
+            document.getElementById("adminTable").innerHTML = 
+                '<div class="message message-error">Failed to load tickets</div>';
+        });
+}
 
-</body>
-</html>
+// Load all tickets on page load
+loadAdminTickets('all');
+</script>
 
+<?php include("../includes/footer.php"); ?>

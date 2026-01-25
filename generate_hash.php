@@ -1,2 +1,3 @@
 <?php
-echo password_hash("admin123", PASSWORD_DEFAULT);
+echo password_hash("PDL#@39505", PASSWORD_DEFAULT);
+?>
