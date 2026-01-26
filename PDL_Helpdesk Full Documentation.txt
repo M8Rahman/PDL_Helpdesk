@@ -1,7 +1,7 @@
 Directory structure:
 └── m8rahman-pdl_helpdesk/
-    ├── Documentation.txt
     ├── generate_hash.php
+    ├── hash_generation.php
     ├── index.php
     ├── pdl_create.bat
     ├── actions/
@@ -49,23 +49,53 @@ Directory structure:
         └── .dashboard.php
 
 ================================================
-FILE: Documentation.txt
-================================================
-Server
-###########################
-Server Main Path--> D:\Xampp\htdocs\PDL_Helpdesk
-Project URL--> http://192.168.0.160/PDL_Helpdesk/
-Client URL Bookmark--> http://192.168.0.160/PDL_Helpdesk/auth/login.php
-
-
-
-
-================================================
 FILE: generate_hash.php
 ================================================
 <?php
 echo password_hash("PDL#@39505", PASSWORD_DEFAULT);
 ?>
+
+
+================================================
+FILE: hash_generation.php
+================================================
+<?php
+
+$users = [
+    ['username' => 'PDLC1-7086', 'password' => '7086'],
+    ['username' => 'PDLC1-9773', 'password' => '9773'],
+    ['username' => 'PDLC1-20918', 'password' => '20918'],
+    ['username' => 'PDLC1-21015', 'password' => '21015'],
+    ['username' => 'PDLC1-30705', 'password' => '30705'],
+    ['username' => 'PDLC1-30707', 'password' => '30707'],
+    ['username' => 'PDLC1-30709', 'password' => '30709'],
+    ['username' => 'PDLC1-30710', 'password' => '30710'],
+    ['username' => 'PDLC1-30711', 'password' => '30711'],
+    ['username' => 'PDLC1-30712', 'password' => '30712'],
+    ['username' => 'PDLC1-30713', 'password' => '30713'],
+    ['username' => 'PDLC1-30714', 'password' => '30714'],
+    ['username' => 'PDLC1-30715', 'password' => '30715'],
+    ['username' => 'PDLC1-30716', 'password' => '30716'],
+    ['username' => 'PDLC1-30717', 'password' => '30717'],
+    ['username' => 'PDLC1-30718', 'password' => '30718'],
+    ['username' => 'PDLC1-30719', 'password' => '30719'],
+    ['username' => 'PDLC1-30720', 'password' => '30720'],
+];
+
+$sql = "INSERT INTO `users`
+(`username`, `password`, `role`, `status`, `remarks`, `created_at`, `updated_at`, `updated_by`)
+VALUES\n";
+
+$values = [];
+
+foreach ($users as $u) {
+    $hashed = password_hash($u['password'], PASSWORD_DEFAULT);
+    $values[] = "('{$u['username']}', '{$hashed}', 'user', 'active', NULL, CURRENT_TIMESTAMP, NULL, NULL)";
+}
+
+$sql .= implode(",\n", $values) . ";";
+
+echo $sql;
 
 
 ================================================
@@ -2462,7 +2492,7 @@ require_once("../config/db.php");
 // Check remember me cookie
 if (!isset($_SESSION["user_id"]) && isset($_COOKIE["remember_user"])) {
     $token = $_COOKIE["remember_user"];
-    $stmt = $conn->prepare("SELECT * FROM users WHERE MD5(CONCAT(id, username)) = ? AND status = 'active'");
+    $stmt = $conn->prepare("SELECT * FROM users WHERE MD5(CONCAT(id, username)) = ? AND user_status = 'active'");
     $stmt->bind_param("s", $token);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -2513,7 +2543,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["login"])) {
 
         if ($user = $result->fetch_assoc()) {
             // Check if account is active
-            if (isset($user["status"]) && $user["status"] === "inactive") {
+            if (isset($user["status"]) && $user["user_status"] === "inactive") {
                 $error = "Your account has been deactivated. Please contact admin.";
             } elseif (password_verify($password, $user["password"])) {
                 $_SESSION["user_id"] = $user["id"];
