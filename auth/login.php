@@ -4,7 +4,7 @@ require_once("../config/db.php");
 // Check remember me cookie
 if (!isset($_SESSION["user_id"]) && isset($_COOKIE["remember_user"])) {
     $token = $_COOKIE["remember_user"];
-    $stmt = $conn->prepare("SELECT * FROM users WHERE MD5(CONCAT(id, username)) = ? AND status = 'active'");
+    $stmt = $conn->prepare("SELECT * FROM users WHERE MD5(CONCAT(id, username)) = ? AND user_status = 'active'");
     $stmt->bind_param("s", $token);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -55,7 +55,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["login"])) {
 
         if ($user = $result->fetch_assoc()) {
             // Check if account is active
-            if (isset($user["status"]) && $user["status"] === "inactive") {
+            if (isset($user["status"]) && $user["user_status"] === "inactive") {
                 $error = "Your account has been deactivated. Please contact admin.";
             } elseif (password_verify($password, $user["password"])) {
                 $_SESSION["user_id"] = $user["id"];
