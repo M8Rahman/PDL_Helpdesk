@@ -1,0 +1,36 @@
+/*
+ * PDL_Helpdesk — Custom Font Integration
+ * Font: Spiffy Script SSi (company branding font)
+ *
+ * HOW TO USE:
+ * 1. Obtain the font file "SpiffyScriptSSi.ttf" (or .woff2/.woff)
+ * 2. Place it in: static/fonts/SpiffyScriptSSi.woff2 (and .woff for fallback)
+ * 3. The @font-face below will load it automatically.
+ *
+ * FALLBACK CHAIN: If the font file is not present, falls back to
+ * Dancing Script (elegant web font) → cursive → sans-serif.
+ */
+
+/* ── @font-face for local Spiffy Script SSi file ── */
+@font-face {
+    font-family: 'Spiffy Script SSi';
+    src: url('../fonts/SpiffyScriptSSi.woff2') format('woff2'),
+         url('../fonts/SpiffyScriptSSi.woff')  format('woff'),
+         url('../fonts/SpiffyScriptSSi.ttf')   format('truetype');
+    font-weight: normal;
+    font-style:  normal;
+    font-display: swap;
+}
+
+/*
+ * Company brand font utility class.
+ * Use class="company-font" wherever the company name appears.
+ * Falls back gracefully if font file is not installed.
+ */
+.company-font {
+    font-family: 'Spiffy Script SSi', 'Dancing Script', 'Pacifico', cursive;
+    letter-spacing: 0.01em;
+}
+
+/* ── Import Dancing Script as web fallback ── */
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&display=swap');

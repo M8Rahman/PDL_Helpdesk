@@ -1,0 +1,45 @@
+# PDL_Helpdesk — Apache Configuration
+# Ensures all requests go through index.php
+# Protects sensitive directories from direct web access
+
+# ── Disable directory listing ─────────────────────────────────
+Options -Indexes
+
+# ── PHP Settings ─────────────────────────────────────────────
+# php_flag display_errors Off
+# php_value upload_max_filesize 10M
+# php_value post_max_size 12M
+
+# ── Protect sensitive directories ────────────────────────────
+<FilesMatch "\.(sql|log|md|txt|json|sh|env)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Block direct access to config, core, logs directories
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /PDL_Helpdesk/
+
+    # Block direct access to PHP files in protected dirs
+    RewriteRule ^config/.*\.php$  - [F,L]
+    RewriteRule ^core/.*\.php$    - [F,L]
+    RewriteRule ^logs/            - [F,L]
+
+    # Allow direct access to static assets
+    RewriteRule ^static/          - [L]
+    RewriteRule ^uploads/         - [L]
+
+    # Route everything else through index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php?page=$1 [QSA,L]
+</IfModule>
+
+# ── Security Headers ─────────────────────────────────────────
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
