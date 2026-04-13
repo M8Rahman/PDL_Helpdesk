@@ -30,6 +30,35 @@ class TicketModel extends Model
      * @param int   $page
      * @param int   $perPage
      */
+    // public function getPaginated(array $filters, int $page = 1, int $perPage = TICKETS_PER_PAGE): array
+    // {
+    //     [$where, $params] = $this->buildWhereClause($filters);
+    //     $pag = $this->paginate($page, $perPage);
+
+    //     $total = $this->count(
+    //         "SELECT COUNT(*) FROM tickets t WHERE {$where}",
+    //         $params
+    //     );
+
+    //     $params[] = $pag['limit'];
+    //     $params[] = $pag['offset'];
+
+    //     $rows = $this->select(
+    //         "SELECT t.ticket_id, t.ticket_code, t.title, t.status, t.priority,
+    //                 t.assigned_department, t.created_at, t.updated_at,
+    //                 u.full_name AS creator_name
+    //          FROM tickets t
+    //          JOIN users u ON t.created_by = u.user_id
+    //          WHERE {$where}
+    //          ORDER BY
+    //             FIELD(t.priority,'critical','high','medium','low'),
+    //             t.created_at DESC
+    //          LIMIT ? OFFSET ?",
+    //         $params
+    //     );
+
+    //     return ['rows' => $rows, 'total' => $total];
+    // }
     public function getPaginated(array $filters, int $page = 1, int $perPage = TICKETS_PER_PAGE): array
     {
         [$where, $params] = $this->buildWhereClause($filters);
@@ -40,6 +69,15 @@ class TicketModel extends Model
             $params
         );
 
+        // Determine sort order from filters
+        $sort = $filters['sort'] ?? 'created_desc';
+        $orderBy = match($sort) {
+            'created_asc'  => 't.created_at ASC',
+            'created_desc' => 't.created_at DESC',
+            'priority'     => "FIELD(t.priority,'critical','high','medium','low'), t.created_at DESC",
+            default        => 't.created_at DESC'
+        };
+
         $params[] = $pag['limit'];
         $params[] = $pag['offset'];
 
@@ -47,13 +85,11 @@ class TicketModel extends Model
             "SELECT t.ticket_id, t.ticket_code, t.title, t.status, t.priority,
                     t.assigned_department, t.created_at, t.updated_at,
                     u.full_name AS creator_name
-             FROM tickets t
-             JOIN users u ON t.created_by = u.user_id
-             WHERE {$where}
-             ORDER BY
-                FIELD(t.priority,'critical','high','medium','low'),
-                t.created_at DESC
-             LIMIT ? OFFSET ?",
+            FROM tickets t
+            JOIN users u ON t.created_by = u.user_id
+            WHERE {$where}
+            ORDER BY {$orderBy}
+            LIMIT ? OFFSET ?",
             $params
         );
 

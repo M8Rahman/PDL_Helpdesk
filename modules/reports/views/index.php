@@ -49,7 +49,7 @@ $priorityBgColors = array_map(fn($r) => $priorityColors[$r['priority']] ?? '#94a
             class="px-4 py-1.5 rounded-lg text-sm font-medium bg-slate-800 dark:bg-slate-600 text-white hover:bg-slate-700 transition-colors">
         Apply
     </button>
-    <?php foreach ([7=>>'Last 7 days', 30=>'Last 30 days', 90=>'Last 90 days'] as $days => $label): ?>
+    <?php foreach ([7=>'Last 7 days', 30=>'Last 30 days', 90=>'Last 90 days'] as $days => $label): ?>
     <a href="<?= BASE_URL ?>?page=reports&date_from=<?= date('Y-m-d',strtotime("-{$days} days")) ?>&date_to=<?= date('Y-m-d') ?>"
        class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
         <?= $label ?>

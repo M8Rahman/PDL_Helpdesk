@@ -18,7 +18,7 @@ class RBAC
 
         // ── Tickets ──────────────────────────────────────────
         'ticket.create'            => ['normal_user', 'it', 'mis', 'admin', 'super_admin'],
-        'ticket.create_for_click'  => ['admin', 'super_admin'],
+        'ticket.create_for_click'  => ['normal_user', 'it', 'mis', 'admin', 'super_admin'],
         'ticket.view_own'          => ['normal_user', 'it', 'mis', 'admin', 'super_admin'],
         'ticket.view_department'   => ['it', 'mis', 'admin', 'super_admin'],
         'ticket.view_all'          => ['admin', 'super_admin'],

@@ -84,6 +84,7 @@ class TicketController extends Controller
         if ($s = $this->get('status'))   $filters['status']   = $s;
         if ($p = $this->get('priority')) $filters['priority'] = $p;
         if ($q = $this->get('q'))        $filters['search']   = $q;
+        if ($s = $this->get('sort')) $filters['sort'] = $s;
 
         // Admin can filter department queue by dept in URL
         if ($filter === 'all' && ($d = $this->get('dept'))) {
