@@ -10,7 +10,7 @@
 // ── Application ──────────────────────────────────────────────
 define('APP_NAME',    'PDL Helpdesk');
 define('APP_VERSION', '1.0.0');
-define('APP_ENV',     'production');   // 'development' | 'production'
+define('APP_ENV',     'development');   // 'development' | 'production'
 
 // ── Base URL (trailing slash required) ───────────────────────
 // Change SERVER_IP to your actual LAN IP or hostname.
