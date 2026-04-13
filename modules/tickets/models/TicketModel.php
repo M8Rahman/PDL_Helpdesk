@@ -96,6 +96,21 @@ class TicketModel extends Model
         return ['rows' => $rows, 'total' => $total];
     }
 
+    public function getAllForPdfExport(): array
+    {
+        return $this->select(
+            "SELECT t.ticket_id, t.ticket_code, t.title, t.description,
+                    t.status, t.priority, t.department, t.assigned_department,
+                    t.created_at, t.updated_at, t.resolved_at,
+                    u.full_name AS creator_name, u.email AS creator_email,
+                    r.full_name AS resolver_name
+             FROM tickets t
+             JOIN  users u ON t.created_by  = u.user_id
+             LEFT JOIN users r ON t.resolved_by = r.user_id
+             ORDER BY t.created_at ASC"
+        );
+    }
+
     private function buildWhereClause(array $filters): array
     {
         $where  = ['1=1'];

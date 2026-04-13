@@ -2,10 +2,9 @@
 /**
  * PDL_Helpdesk — Ticket Controller
  *
- * FIXED: Department Queue now correctly filters by user's role-based department.
- *   - IT role  → shows only IT tickets
- *   - MIS role → shows only MIS tickets
- *   - Admin    → shows all tickets (or filtered by ?dept= param)
+ * UPDATED:
+ * - Department filter now applies in ALL filter modes (for admin/super_admin)
+ * - Added tickets/export GET route support
  */
 
 require_once ROOT_PATH . 'core/Controller.php';
@@ -28,27 +27,16 @@ class TicketController extends Controller
 
         $user   = Auth::user();
         $role   = $user['role'];
-
-        // Determine which filter tab is active
         $filter = $this->get('filter', 'mine');
 
-        // ── Build filters & page title based on role + filter ──
         $filters   = [];
         $viewTitle = 'My Tickets';
 
         if ($filter === 'department') {
-            // ── DEPARTMENT QUEUE ─────────────────────────────
-            // Only accessible to IT, MIS, Admin, Super Admin
             if (!RBAC::can('ticket.view_department')) {
-                // Normal users who somehow hit this URL → show their own
                 $filters['created_by'] = $user['user_id'];
                 $viewTitle = 'My Tickets';
             } else {
-                // For IT role: department = IT
-                // For MIS role: department = MIS
-                // For admin/super_admin: show all UNLESS a ?dept= param is given
-                // Derive department from role — covers cases where user's
-                // department field was left as GENERAL in the database.
                 if ($role === 'it') {
                     $filters['department'] = 'IT';
                     $viewTitle = 'IT Department Queue';
@@ -56,38 +44,29 @@ class TicketController extends Controller
                     $filters['department'] = 'MIS';
                     $viewTitle = 'MIS Department Queue';
                 } else {
-                    // Admin — optionally filter by ?dept= query param
-                    if ($d = $this->get('dept')) {
-                        $filters['department'] = strtoupper($d);
-                        $viewTitle = strtoupper($d) . ' Department Queue';
-                    } else {
-                        // Admin with no dept filter: show all open/in-progress
-                        $viewTitle = 'All Department Queues';
-                        // No department filter — admin sees everything
-                    }
+                    $viewTitle = 'All Department Queues';
                 }
             }
 
         } elseif ($filter === 'all' && RBAC::can('ticket.view_all')) {
-            // ── ALL TICKETS (Admin only) ──────────────────────
             $viewTitle = 'All Tickets';
-            // No restrictions on filters — admin sees everything
 
         } else {
-            // ── MY TICKETS (default, all roles) ──────────────
             $filters['created_by'] = $user['user_id'];
             $viewTitle = 'My Tickets';
-            $filter    = 'mine'; // normalize
+            $filter    = 'mine';
         }
 
-        // ── Additional column filters from query string ────────
+        // ── Standard column filters ────────────────────────────
         if ($s = $this->get('status'))   $filters['status']   = $s;
         if ($p = $this->get('priority')) $filters['priority'] = $p;
         if ($q = $this->get('q'))        $filters['search']   = $q;
-        if ($s = $this->get('sort')) $filters['sort'] = $s;
+        if ($s = $this->get('sort'))     $filters['sort']     = $s;
 
-        // Admin can filter department queue by dept in URL
-        if ($filter === 'all' && ($d = $this->get('dept'))) {
+        // ── Department filter — applies for admin in ALL modes ──
+        // IT/MIS roles are already locked to their department above;
+        // this only activates for admin/super_admin via the dropdown.
+        if (RBAC::can('ticket.view_all') && ($d = $this->get('dept'))) {
             $filters['department'] = strtoupper($d);
         }
 
@@ -180,7 +159,6 @@ class TicketController extends Controller
             return;
         }
 
-        // Access check: normal users can only see own tickets
         if (!RBAC::can('ticket.view_all') && !RBAC::canAccessDepartment($ticket['assigned_department'])) {
             if ((int)$ticket['created_by'] !== Auth::id()) {
                 Auth::setFlash('error', 'You do not have permission to view this ticket.');
@@ -290,7 +268,8 @@ class TicketController extends Controller
             Notification::onTicketClosed($ticketId, (int)$ticket['created_by'], $ticket['ticket_code']);
         }
 
-        $this->redirectWithFlash('tickets/view', 'success', 'Status updated to ' . ucfirst(str_replace('_',' ',$newStatus)) . '.', ['id' => $ticketId]);
+        $this->redirectWithFlash('tickets/view', 'success',
+            'Status updated to ' . ucfirst(str_replace('_',' ',$newStatus)) . '.', ['id' => $ticketId]);
     }
 
     // ── Transfer (POST) ───────────────────────────────────────
@@ -373,7 +352,6 @@ class TicketController extends Controller
         $files = $_FILES['attachments'];
         $count = 0;
 
-        // Normalize single vs multiple file input
         if (!is_array($files['name'])) {
             $files = array_map(fn($v) => [$v], $files);
         }

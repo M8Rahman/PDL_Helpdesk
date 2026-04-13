@@ -2,10 +2,7 @@
 /**
  * PDL_Helpdesk — Router
  *
- * Maps ?page= URL parameters to controller actions.
- * GET and POST routes are now explicitly separated to prevent
- * the POST-suffix logic from interfering with GET-only pages
- * like Reports and Audit which were returning 404.
+ * UPDATED: Added 'tickets/export' GET route for PDF export.
  */
 
 class Router
@@ -15,32 +12,33 @@ class Router
      */
     private static array $getRoutes = [
         // Auth
-        'auth/login'            => ['modules/auth/controllers/LoginController.php',              'LoginController',      'showLogin'],
-        'auth/logout'           => ['modules/auth/controllers/LoginController.php',              'LoginController',      'logout'],
+        'auth/login'            => ['modules/auth/controllers/LoginController.php',              'LoginController',         'showLogin'],
+        'auth/logout'           => ['modules/auth/controllers/LoginController.php',              'LoginController',         'logout'],
 
         // Dashboard
-        'dashboard'             => ['modules/dashboard/controllers/DashboardController.php',     'DashboardController',  'index'],
+        'dashboard'             => ['modules/dashboard/controllers/DashboardController.php',     'DashboardController',     'index'],
 
-        // Tickets — list/view/forms
-        'tickets'               => ['modules/tickets/controllers/TicketController.php',          'TicketController',     'index'],
-        'tickets/create'        => ['modules/tickets/controllers/TicketController.php',          'TicketController',     'create'],
-        'tickets/view'          => ['modules/tickets/controllers/TicketController.php',          'TicketController',     'view'],
-        'tickets/edit'          => ['modules/tickets/controllers/TicketController.php',          'TicketController',     'edit'],
+        // Tickets — list/view/forms/export
+        'tickets'               => ['modules/tickets/controllers/TicketController.php',          'TicketController',        'index'],
+        'tickets/create'        => ['modules/tickets/controllers/TicketController.php',          'TicketController',        'create'],
+        'tickets/view'          => ['modules/tickets/controllers/TicketController.php',          'TicketController',        'view'],
+        'tickets/edit'          => ['modules/tickets/controllers/TicketController.php',          'TicketController',        'edit'],
+        'tickets/export'        => ['modules/tickets/controllers/TicketExportController.php',    'TicketExportController',  'export'],  // ← NEW
 
         // Users — list/forms
-        'users'                 => ['modules/users/controllers/UserController.php',              'UserController',       'index'],
-        'users/create'          => ['modules/users/controllers/UserController.php',              'UserController',       'create'],
-        'users/edit'            => ['modules/users/controllers/UserController.php',              'UserController',       'edit'],
+        'users'                 => ['modules/users/controllers/UserController.php',              'UserController',          'index'],
+        'users/create'          => ['modules/users/controllers/UserController.php',              'UserController',          'create'],
+        'users/edit'            => ['modules/users/controllers/UserController.php',              'UserController',          'edit'],
 
         // Reports — GET always
-        'reports'               => ['modules/reports/controllers/ReportController.php',          'ReportController',     'index'],
-        'reports/export'        => ['modules/reports/controllers/ReportController.php',          'ReportController',     'export'],
+        'reports'               => ['modules/reports/controllers/ReportController.php',          'ReportController',        'index'],
+        'reports/export'        => ['modules/reports/controllers/ReportController.php',          'ReportController',        'export'],
 
         // Audit — GET always
-        'audit'                 => ['modules/audit/controllers/AuditController.php',             'AuditController',      'index'],
+        'audit'                 => ['modules/audit/controllers/AuditController.php',             'AuditController',         'index'],
 
         // Notifications — AJAX GET
-        'notifications/fetch'   => ['modules/dashboard/controllers/NotificationController.php', 'NotificationController','fetch'],
+        'notifications/fetch'   => ['modules/dashboard/controllers/NotificationController.php', 'NotificationController',  'fetch'],
     ];
 
     /**
@@ -48,25 +46,25 @@ class Router
      */
     private static array $postRoutes = [
         // Auth
-        'auth/login'            => ['modules/auth/controllers/LoginController.php',              'LoginController',      'handleLogin'],
+        'auth/login'            => ['modules/auth/controllers/LoginController.php',              'LoginController',         'handleLogin'],
 
         // Tickets — mutations
-        'tickets/store'         => ['modules/tickets/controllers/TicketController.php',          'TicketController',     'store'],
-        'tickets/update'        => ['modules/tickets/controllers/TicketController.php',          'TicketController',     'update'],
-        'tickets/status'        => ['modules/tickets/controllers/TicketController.php',          'TicketController',     'changeStatus'],
-        'tickets/transfer'      => ['modules/tickets/controllers/TicketController.php',          'TicketController',     'transfer'],
-        'tickets/comment'       => ['modules/tickets/controllers/TicketController.php',          'TicketController',     'addComment'],
-        'tickets/upload'        => ['modules/tickets/controllers/TicketController.php',          'TicketController',     'uploadAttachment'],
+        'tickets/store'         => ['modules/tickets/controllers/TicketController.php',          'TicketController',        'store'],
+        'tickets/update'        => ['modules/tickets/controllers/TicketController.php',          'TicketController',        'update'],
+        'tickets/status'        => ['modules/tickets/controllers/TicketController.php',          'TicketController',        'changeStatus'],
+        'tickets/transfer'      => ['modules/tickets/controllers/TicketController.php',          'TicketController',        'transfer'],
+        'tickets/comment'       => ['modules/tickets/controllers/TicketController.php',          'TicketController',        'addComment'],
+        'tickets/upload'        => ['modules/tickets/controllers/TicketController.php',          'TicketController',        'uploadAttachment'],
 
         // Users — mutations
-        'users/store'           => ['modules/users/controllers/UserController.php',              'UserController',       'store'],
-        'users/update'          => ['modules/users/controllers/UserController.php',              'UserController',       'update'],
-        'users/toggle'          => ['modules/users/controllers/UserController.php',              'UserController',       'toggleActive'],
-        'users/reset-password'  => ['modules/users/controllers/UserController.php',              'UserController',       'resetPassword'],
+        'users/store'           => ['modules/users/controllers/UserController.php',              'UserController',          'store'],
+        'users/update'          => ['modules/users/controllers/UserController.php',              'UserController',          'update'],
+        'users/toggle'          => ['modules/users/controllers/UserController.php',              'UserController',          'toggleActive'],
+        'users/reset-password'  => ['modules/users/controllers/UserController.php',              'UserController',          'resetPassword'],
 
         // Notifications — AJAX POST
-        'notifications/read'    => ['modules/dashboard/controllers/NotificationController.php', 'NotificationController','markRead'],
-        'notifications/read-all'=> ['modules/dashboard/controllers/NotificationController.php', 'NotificationController','markAllRead'],
+        'notifications/read'    => ['modules/dashboard/controllers/NotificationController.php', 'NotificationController',  'markRead'],
+        'notifications/read-all'=> ['modules/dashboard/controllers/NotificationController.php', 'NotificationController',  'markAllRead'],
     ];
 
     /**
@@ -87,10 +85,8 @@ class Router
 
         // Resolve route based on request method
         if ($method === 'POST') {
-            // POST: check post routes first, then fall back to get routes
             $route = self::$postRoutes[$page] ?? self::$getRoutes[$page] ?? null;
         } else {
-            // GET (or any other method): only get routes
             $route = self::$getRoutes[$page] ?? null;
         }
 
